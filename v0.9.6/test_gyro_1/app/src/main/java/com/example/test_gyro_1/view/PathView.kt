@@ -125,9 +125,15 @@ class PathView @JvmOverloads constructor(
         super.onDraw(canvas)
         if (width == 0 || height == 0) return
 
+        // ★★★ 修正点 1 (最重要) ★★★
+        // onDraw内で毎回スケール計算をしていた重い処理を削除します。
+        // これがフリーズの主な原因でした。
+        // スケールの再計算は updatePath と onSizeChanged でのみ行われます。
+        /*
         if(this.lastPointsForBounds.isNotEmpty()){
             calculateBoundsAndScale(this.lastPointsForBounds)
         }
+        */
 
         canvas.drawPath(path, paint)
 

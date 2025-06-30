@@ -19,7 +19,9 @@ import com.example.test_gyro_1.processor.MotionProcessor
 import com.example.test_gyro_1.processor.MotionState
 import com.example.test_gyro_1.view.AttitudeIndicatorView
 import com.example.test_gyro_1.view.PathView
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
@@ -67,20 +69,25 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
 
         lifecycleScope.launch {
-            motionProcessor.motionStateFlow.collectLatest { state ->
-                val uiPitchForIndicator = state.absolutePitch
-                val uiRollForIndicator = state.absoluteRoll
-                val uiYawForIndicator = state.absoluteYaw
+            // ★★★ 修正点 3 ★★★
+            // sampleオペレータを追加し、UI更新を約15fps(66msごと)に間引きます。
+            // これにより、描画負荷が大幅に削減され、アプリの応答性が向上します。
+            motionProcessor.motionStateFlow
+                .sample(16) // 60fps
+                .collectLatest { state ->
+                    val uiPitchForIndicator = state.absolutePitch
+                    val uiRollForIndicator = state.absoluteRoll
+                    val uiYawForIndicator = state.absoluteYaw
 
-                attitudeIndicatorView.updateAttitude(
-                    uiPitchForIndicator,
-                    uiYawForIndicator,
-                    uiRollForIndicator
-                )
+                    attitudeIndicatorView.updateAttitude(
+                        uiPitchForIndicator,
+                        uiYawForIndicator,
+                        uiRollForIndicator
+                    )
 
-                pathView.updatePath(state.pathHistory, state.currentPoint)
-                updateUI(state)
-            }
+                    pathView.updatePath(state.pathHistory, state.currentPoint)
+                    updateUI(state)
+                }
         }
 
         lifecycleScope.launch {
@@ -176,10 +183,15 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (event == null) return
-        when (event.sensor.type) {
-            Sensor.TYPE_GYROSCOPE -> motionProcessor.processGyroscopeEvent(event)
-            Sensor.TYPE_LINEAR_ACCELERATION -> motionProcessor.processLinearAccelerationEvent(event)
-            Sensor.TYPE_ROTATION_VECTOR, Sensor.TYPE_GAME_ROTATION_VECTOR -> motionProcessor.processRotationVectorEvent(event)
+        // ★★★ 修正点 2 ★★★
+        // センサー処理（行列計算など）をバックグラウンドスレッドに移行し、UIスレッドの負荷を軽減します。
+        // これにより、UIが固まるのを防ぎます。
+        lifecycleScope.launch(Dispatchers.Default) {
+            when (event.sensor.type) {
+                Sensor.TYPE_GYROSCOPE -> motionProcessor.processGyroscopeEvent(event)
+                Sensor.TYPE_LINEAR_ACCELERATION -> motionProcessor.processLinearAccelerationEvent(event)
+                Sensor.TYPE_ROTATION_VECTOR, Sensor.TYPE_GAME_ROTATION_VECTOR -> motionProcessor.processRotationVectorEvent(event)
+            }
         }
     }
 

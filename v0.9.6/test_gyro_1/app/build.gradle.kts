@@ -41,9 +41,9 @@ android {
 
 dependencies {
     implementation("com.google.android.gms:play-services-location:21.0.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")//　lifecycleScope用
-    implementation("androidx.activity:activity-ktx:1.7.2") //　registerForActivityResult用
-    implementation("androidx.appcompat:appcompat:1.6.1") //　最新バージョンを使用
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")// lifecycleScope用
+    implementation("androidx.activity:activity-ktx:1.7.2") // registerForActivityResult用
+    implementation("androidx.appcompat:appcompat:1.6.1") // 最新バージョンを使用
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
